@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sticky Note - Multi-Color WebBluetooth Drawing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .drawing-area {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #drawCanvas {
+            border: 2px solid #333;
+            background-color: white;
+            cursor: crosshair;
+            border-radius: 5px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .color-btn {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #333;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .color-btn.active {
+            transform: scale(1.2);
+            border-width: 4px;
+        }
+        .color-btn.white { background-color: white; }
+        .color-btn.black { background-color: black; }
+        .color-btn.yellow { background-color: #ffff00; }
+        .color-btn.red { background-color: #ff0000; }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.disconnected {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.connected {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        .status.sending {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .brush-size {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        #brushSize {
+            width: 150px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .display-mode-selector {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .display-mode-selector h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .mode-icons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .mode-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 80px;
+        }
+        .mode-icon:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+        }
+        .mode-icon.active {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+        }
+        .mode-preview {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .mode-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+        }
+        .photo-controls {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .photo-controls h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .preview-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #previewCanvas {
+            border: 2px solid #28a745;
+            border-radius: 5px;
+            background-color: white;
+        }
+        .render-mode-selector {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .render-mode-selector h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+        }
+        .render-mode-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .render-mode-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 80px;
+        }
+        .render-mode-btn:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+        }
+        .render-mode-btn.active {
+            border-color: #007bff;
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📷 AI Photo Frame</h1>
+        
+        <div class="instructions">
+            <h3>使い方</h3>
+            <ol>
+                <li>「Connect to ESP32」ボタンを押してESP32と接続</li>
+                <li>表示モード（2色・3色・4色）を選択</li>
+                <li>写真を選択して正方形にトリミング</li>
+                <li>選択したモードでプレビューし、送信ボタンでe-paperに送信</li>
+            </ol>
+            <p><strong>注意:</strong> WebBluetoothはHTTPS環境またはlocalhostでのみ動作します</p>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            ESP32との接続が必要です
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="connectBtn" onclick="connectToESP32()">Connect to ESP32</button>
+        </div>
+
+        <div class="display-mode-selector">
+            <h3>表示モード</h3>
+            <div class="mode-icons">
+                <div class="mode-icon" data-mode="2" onclick="selectDisplayMode(2)">
+                    <div class="mode-preview">
+                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
+                        <span class="color-dot" style="background-color: black;"></span>
+                    </div>
+                    <span class="mode-label">2色</span>
+                </div>
+                <div class="mode-icon" data-mode="3" onclick="selectDisplayMode(3)">
+                    <div class="mode-preview">
+                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
+                        <span class="color-dot" style="background-color: black;"></span>
+                        <span class="color-dot" style="background-color: red;"></span>
+                    </div>
+                    <span class="mode-label">3色</span>
+                </div>
+                <div class="mode-icon active" data-mode="4" onclick="selectDisplayMode(4)">
+                    <div class="mode-preview">
+                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
+                        <span class="color-dot" style="background-color: black;"></span>
+                        <span class="color-dot" style="background-color: red;"></span>
+                        <span class="color-dot" style="background-color: yellow;"></span>
+                    </div>
+                    <span class="mode-label">4色</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="photo-controls">
+            <h3>📷 写真を選択</h3>
+            <div style="margin: 20px 0;">
+                <input id="photoInput" type="file" accept="image/*" style="display:none" onchange="onPhotoSelected(event)" />
+                <button onclick="document.getElementById('photoInput').click()">写真を選択</button>
+            </div>
+
+            <div id="previewArea" style="display: none;">
+                <div class="render-mode-selector">
+                    <h4>🎨 描画モード</h4>
+                    <div class="render-mode-options">
+                        <div class="render-mode-btn active" onclick="selectRenderMode('floyd-steinberg')" title="高品質なグラデーション">点描</div>
+                        <div class="render-mode-btn" onclick="selectRenderMode('atkinson')" title="Mac風のソフトなディザ">ソフト</div>
+                        <div class="render-mode-btn" onclick="selectRenderMode('ordered')" title="規則正しいパターン">パターン</div>
+                        <div class="render-mode-btn" onclick="selectRenderMode('threshold')" title="クリアな輪郭">クリア</div>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <h4>プレビュー（自動正方形切り取り）</h4>
+                    <canvas id="previewCanvas" width="200" height="200"></canvas>
+                </div>
+                <div style="margin: 20px 0;">
+                    <button id="sendBtn" onclick="sendImage()" disabled>送信</button>
+                    <button onclick="resetPhoto()">新しい写真を選択</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebBluetooth settings
+        const SERVICE_UUID = '12345678-1234-5678-9abc-123456789abc';
+        const CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abc';
+        
+        // Command types for ESP32
+        const COMMAND_TYPE = {
+            DRAW_DATA: 0x01,
+            COMPRESSED_DATA: 0x03,
+            STATUS_REQUEST: 0x04,
+            SET_MODE: 0x05
+        };
+        
+        let bluetoothDevice = null;
+        let bluetoothCharacteristic = null;
+        let isConnected = false;
+        
+        // Photo processing settings
+        let previewCanvas = null;
+        let previewCtx = null;
+        let originalImage = null;
+        let displayMode = 4; // 2=2色, 3=3色, 4=4色
+        let renderMode = 'floyd-steinberg'; // デフォルトの描画モード
+
+        // Image data (200x200 pixels, variable bits per pixel based on mode)
+        let imageData = new Uint8Array(10000); // Maximum size for 4-color mode
+        const TARGET_SIZE = 200;
+        
+        // Initialize
+        window.onload = function() {
+            // Initialize preview canvas
+            previewCanvas = document.getElementById('previewCanvas');
+            if (previewCanvas) previewCtx = previewCanvas.getContext('2d');
+
+            // Clear preview canvas
+            if (previewCtx) {
+                previewCtx.fillStyle = 'white';
+                previewCtx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+            }
+
+            updateStatus('ESP32との接続が必要です', 'disconnected');
+
+            // Initialize display mode
+            selectDisplayMode(4);
+        };
+        
+        // Photo processing functions
+        function onPhotoSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    processImageToSquare(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function processImageToSquare(img) {
+            console.log(`Processing image: ${img.width}x${img.height}`);
+
+            // Clear preview canvas
+            previewCtx.fillStyle = 'white';
+            previewCtx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+            // Calculate center crop area for square output
+            const size = Math.min(img.width, img.height);  // Use the smaller dimension
+            const cropX = (img.width - size) / 2;          // Center horizontally
+            const cropY = (img.height - size) / 2;         // Center vertically
+
+            console.log(`Square crop: ${size}x${size} from (${cropX}, ${cropY})`);
+
+            // Draw the square-cropped image to preview canvas
+            previewCtx.drawImage(
+                img,
+                cropX, cropY, size, size,          // Source: center square from original image
+                0, 0, TARGET_SIZE, TARGET_SIZE     // Destination: full preview canvas
+            );
+
+            // Apply display mode quantization
+            quantizeCanvasToDisplayMode();
+
+            // Show preview area
+            document.getElementById('previewArea').style.display = 'block';
+            document.getElementById('sendBtn').disabled = !isConnected;
+
+            console.log('Image processed and preview updated');
+        }
+
+        function resetPhoto() {
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('photoInput').value = '';
+            originalImage = null;
+        }
+
+        function selectDisplayMode(mode) {
+            displayMode = mode;
+            console.log('Display mode changed to:', displayMode);
+
+            // Update UI
+            document.querySelectorAll('.mode-icon').forEach(icon => icon.classList.remove('active'));
+            const targetIcon = document.querySelector(`[data-mode="${mode}"]`);
+            if (targetIcon) {
+                targetIcon.classList.add('active');
+            }
+
+            // Re-apply quantization if preview is available
+            const previewArea = document.getElementById('previewArea');
+            if (previewCtx && originalImage && previewArea && previewArea.style.display !== 'none') {
+                console.log('Re-applying quantization for display mode:', mode);
+                // Re-process the image with new display mode
+                processImageToSquare(originalImage);
+            }
+
+            // Send mode to ESP32 if connected
+            if (isConnected && bluetoothCharacteristic) {
+                sendModeToESP32();
+            }
+        }
+
+        function selectRenderMode(mode) {
+            renderMode = mode;
+            console.log('Render mode changed to:', renderMode);
+
+            // Update UI
+            document.querySelectorAll('.render-mode-btn').forEach(btn => btn.classList.remove('active'));
+            const targetBtn = document.querySelector(`[onclick="selectRenderMode('${mode}')"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+
+            // Re-apply quantization if preview is available
+            const previewArea = document.getElementById('previewArea');
+            if (previewCtx && originalImage && previewArea && previewArea.style.display !== 'none') {
+                console.log('Re-applying quantization for render mode:', mode);
+                // Re-process the image with new render mode
+                processImageToSquare(originalImage);
+            }
+        }
+
+        async function sendModeToESP32() {
+            try {
+                const modePacket = new Uint8Array(2);
+                modePacket[0] = COMMAND_TYPE.SET_MODE;
+                modePacket[1] = displayMode;
+
+                await bluetoothCharacteristic.writeValue(modePacket);
+                console.log('Mode sent to ESP32:', displayMode);
+                updateStatus(`モード設定完了: ${displayMode}色モード`, 'connected');
+            } catch (error) {
+                console.error('Failed to send mode:', error);
+                updateStatus('モード設定に失敗しました', 'connected');
+            }
+        }
+        
+        // Send image function
+        function sendImage() {
+            if (!isConnected || !bluetoothCharacteristic) {
+                alert('ESP32に接続してください');
+                return;
+            }
+
+            if (!previewCtx) {
+                alert('送信する画像がありません');
+                return;
+            }
+
+            sendImageData();
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function connectToESP32() {
+            try {
+                updateStatus('ESP32を検索中...', 'disconnected');
+                
+                // Request a device advertising our service (more reliable than name filter)
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }],
+                    optionalServices: [SERVICE_UUID]
+                });
+                
+                // Request larger MTU size for faster data transfer
+                // Note: This is handled automatically by the browser, but we can optimize our approach
+                
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                
+                // Robust connect + service/characteristic discovery with retries
+                await connectGattWithRetry(3);
+                
+                isConnected = true;
+                updateStatus('ESP32に接続済み', 'connected');
+                document.getElementById('connectBtn').textContent = 'Disconnect';
+                document.getElementById('connectBtn').onclick = disconnect;
+                // Enable send button only if preview is available
+                if (previewCtx && originalImage) {
+                    document.getElementById('sendBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Connection failed:', error);
+                if (String(error && error.message).includes('GATT Server is disconnected')) {
+                    updateStatus('接続に失敗: デバイスがBLE停止中の可能性があります（Wi‑Fi接続試行後に再広告）。数秒後に再試行してください。', 'disconnected');
+                } else {
+                    updateStatus('接続に失敗しました: ' + error.message, 'disconnected');
+                }
+            }
+        }
+
+        async function connectGattWithRetry(attempts) {
+            let lastErr = null;
+            for (let i = 0; i < attempts; i++) {
+                try {
+                    // Ensure clean state
+                    try {
+                        if (bluetoothDevice.gatt.connected) {
+                            bluetoothDevice.gatt.disconnect();
+                            await delay(200);
+                        }
+                    } catch (_) {}
+
+                    const server = await bluetoothDevice.gatt.connect();
+                    const service = await server.getPrimaryService(SERVICE_UUID);
+                    bluetoothCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+                    return; // success
+                } catch (e) {
+                    lastErr = e;
+                    console.warn(`GATT connect attempt ${i+1} failed:`, e);
+                    await delay(500 + i * 500);
+                }
+            }
+            throw lastErr || new Error('GATT接続に失敗しました');
+        }
+        
+        function onDisconnected() {
+            isConnected = false;
+            bluetoothCharacteristic = null;
+            updateStatus('ESP32との接続が切断されました', 'disconnected');
+            document.getElementById('connectBtn').textContent = 'Connect to ESP32';
+            document.getElementById('connectBtn').onclick = connectToESP32;
+            document.getElementById('sendBtn').disabled = true;
+        }
+        
+        function disconnect() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+        }
+        
+        async function sendImageData() {
+            try {
+                updateStatus('画像データを送信中...', 'sending');
+
+                // Convert preview canvas to image data with command header
+                const imagePacket = createImageDataPacket();
+
+                // Send data in chunks optimized for BLE maximum throughput
+                const CHUNK_SIZE = 244;  // BLE 4.2 maximum payload size
+                const totalChunks = Math.ceil(imagePacket.length / CHUNK_SIZE);
+
+                // Send data sequentially with optimized timing
+                for (let i = 0; i < imagePacket.length; i += CHUNK_SIZE) {
+                    const chunkIndex = Math.floor(i / CHUNK_SIZE);
+                    const chunk = imagePacket.slice(i, Math.min(i + CHUNK_SIZE, imagePacket.length));
+
+                    if (i === 0) {
+                        console.log('First packet header byte:', imagePacket[0]);
+                        console.log('First chunk first byte:', chunk[0]);
+                    }
+
+                    console.log(`Sending chunk ${chunkIndex + 1}/${totalChunks}: ${chunk.length} bytes`);
+
+                    // Send chunk and wait for completion
+                    await bluetoothCharacteristic.writeValue(chunk);
+
+                    // Update progress
+                    const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+                    updateStatus(`送信中... ${progress}% (${chunkIndex + 1}/${totalChunks})`, 'sending');
+
+                    // Optimized delay: no delay for first few chunks, then minimal delay
+                    if (chunkIndex > 2 && i + CHUNK_SIZE < imagePacket.length) {
+                        await new Promise(resolve => setTimeout(resolve, 1));
+                    }
+                }
+
+                updateStatus('送信完了 - ESP32で表示されます', 'connected');
+                console.log('All data sent successfully');
+
+            } catch (error) {
+                console.error('Send failed:', error);
+                updateStatus('送信に失敗しました: ' + error.message, 'connected');
+            }
+        }
+        
+        function convertCanvasToCompressedData() {
+            // Get preview canvas image data
+            const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
+            const pixels = previewImageData.data;
+            
+            // Convert to pixel values first
+            const pixelValues = new Array(TARGET_SIZE * TARGET_SIZE);
+            for (let y = 0; y < TARGET_SIZE; y++) {
+                for (let x = 0; x < TARGET_SIZE; x++) {
+                    const pixelIndex = y * TARGET_SIZE + x;
+                    const rgbaIndex = pixelIndex * 4;
+                    
+                    const r = pixels[rgbaIndex];
+                    const g = pixels[rgbaIndex + 1];
+                    const b = pixels[rgbaIndex + 2];
+                    
+                    if (r === 0 && g === 0 && b === 0) {
+                        pixelValues[pixelIndex] = 0x01; // Black
+                    } else if (r === 255 && g === 255 && b === 0) {
+                        pixelValues[pixelIndex] = 0x02; // Yellow
+                    } else if (r === 255 && g === 0 && b === 0) {
+                        pixelValues[pixelIndex] = 0x03; // Red
+                    } else {
+                        pixelValues[pixelIndex] = 0x00; // White
+                    }
+                }
+            }
+            
+            // RLE compress the pixel data
+            const compressed = [];
+            let i = 0;
+            while (i < pixelValues.length) {
+                const currentPixel = pixelValues[i];
+                let runLength = 1;
+                
+                // Count consecutive identical pixels (max 255)
+                while (i + runLength < pixelValues.length && 
+                       pixelValues[i + runLength] === currentPixel && 
+                       runLength < 255) {
+                    runLength++;
+                }
+                
+                // Store as [length, value] pairs
+                compressed.push(runLength);
+                compressed.push(currentPixel);
+                
+                i += runLength;
+            }
+            
+            return new Uint8Array(compressed);
+        }
+        
+        function convertCanvasToImageData() {
+            const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
+            const pixels = previewImageData.data;
+
+            imageData.fill(0);
+
+            for (let y = 0; y < TARGET_SIZE; y++) {
+                for (let x = 0; x < TARGET_SIZE; x++) {
+                    const pixelIndex = y * TARGET_SIZE + x;
+                    const rgbaIndex = pixelIndex * 4;
+
+                    const r = pixels[rgbaIndex];
+                    const g = pixels[rgbaIndex + 1];
+                    const b = pixels[rgbaIndex + 2];
+                    let pixelValue = 0x00;
+
+                    // Convert RGB to pixel value based on display mode
+                    if (r === 0 && g === 0 && b === 0) {
+                        pixelValue = 0x01; // Black
+                    } else if (displayMode >= 3 && r === 255 && g === 0 && b === 0) {
+                        pixelValue = 0x02; // Red
+                    } else if (displayMode >= 4 && r === 255 && g === 255 && b === 0) {
+                        pixelValue = 0x03; // Yellow
+                    }
+                    // White pixels remain 0x00
+
+                    // Pack pixels based on display mode
+                    if (displayMode === 2) {
+                        // 2-color mode: 1 bit per pixel
+                        const byteIndex = Math.floor(pixelIndex / 8);
+                        const bitOffset = pixelIndex % 8;
+                        if (pixelValue > 0) {
+                            imageData[byteIndex] |= (1 << bitOffset);
+                        }
+                    } else if (displayMode === 3) {
+                        // 3-color mode: 2 bits per pixel (but only use 0,1,2)
+                        const byteIndex = Math.floor(pixelIndex / 4);
+                        const bitOffset = (pixelIndex % 4) * 2;
+                        imageData[byteIndex] |= (pixelValue << bitOffset);
+                    } else {
+                        // 4-color mode: 2 bits per pixel
+                        const byteIndex = Math.floor(pixelIndex / 4);
+                        const bitOffset = (pixelIndex % 4) * 2;
+                        imageData[byteIndex] |= (pixelValue << bitOffset);
+                    }
+                }
+            }
+        }
+        
+        function createCompressedDataPacket() {
+            // Try RLE compression first
+            const compressedData = convertCanvasToCompressedData();
+            
+            console.log(`Original size: 10000 bytes, Compressed size: ${compressedData.length} bytes`);
+            console.log(`Compression ratio: ${(compressedData.length / 10000 * 100).toFixed(1)}%`);
+            
+            // Create packet with compressed data header
+            // [0] Command Type (0x03 = compressed data)
+            // [1-2] Data length (16-bit)
+            // [3...] Compressed data
+            const packet = new Uint8Array(3 + compressedData.length);
+            packet[0] = 0x03; // Compressed data command
+            packet[1] = compressedData.length & 0xFF; // Length low byte
+            packet[2] = (compressedData.length >> 8) & 0xFF; // Length high byte
+            packet.set(compressedData, 3);
+            
+            return packet;
+        }
+        
+        function createImageDataPacket() {
+            convertCanvasToImageData();
+
+            // Calculate data size based on display mode
+            let dataSize;
+            if (displayMode === 2) {
+                dataSize = 5000; // 1 bit per pixel = 40,000 bits = 5,000 bytes
+            } else {
+                dataSize = 10000; // 2 bits per pixel = 80,000 bits = 10,000 bytes
+            }
+
+            // Create packet with mode and image data
+            const packet = new Uint8Array(dataSize + 2);
+            packet[0] = COMMAND_TYPE.DRAW_DATA;
+            packet[1] = displayMode; // Include mode in packet
+            packet.set(imageData.slice(0, dataSize), 2);
+
+            console.log(`Created ${displayMode}-color packet: ${packet.length} bytes`);
+            return packet;
+        }
+
+
+
+        // Multiple dithering algorithms for e-paper display
+
+        // Ordered dithering using Bayer matrix
+        function orderedDither(imageData, width, height, palette) {
+            const data = imageData.data;
+
+            // 4x4 Bayer matrix
+            const bayerMatrix = [
+                [0, 8, 2, 10],
+                [12, 4, 14, 6],
+                [3, 11, 1, 9],
+                [15, 7, 13, 5]
+            ];
+
+            function findClosestColor(r, g, b) {
+                let minDistance = Infinity;
+                let closestColor = 0;
+
+                for (let i = 0; i < palette.length; i++) {
+                    const [pr, pg, pb] = palette[i];
+                    const distance = Math.sqrt((r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = i;
+                    }
+                }
+                return closestColor;
+            }
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const threshold = (bayerMatrix[y % 4][x % 4] / 16) * 255;
+
+                    const r = Math.min(255, data[idx] + threshold - 128);
+                    const g = Math.min(255, data[idx + 1] + threshold - 128);
+                    const b = Math.min(255, data[idx + 2] + threshold - 128);
+
+                    const colorIndex = findClosestColor(r, g, b);
+                    const newColor = palette[colorIndex];
+
+                    data[idx] = newColor[0];
+                    data[idx + 1] = newColor[1];
+                    data[idx + 2] = newColor[2];
+                    data[idx + 3] = 255;
+                }
+            }
+
+            return imageData;
+        }
+
+        // Atkinson dithering (Mac-style)
+        function atkinsonDither(imageData, width, height, palette) {
+            const data = imageData.data;
+
+            function findClosestColor(r, g, b) {
+                let minDistance = Infinity;
+                let closestColor = 0;
+
+                for (let i = 0; i < palette.length; i++) {
+                    const [pr, pg, pb] = palette[i];
+                    const distance = Math.sqrt((r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = i;
+                    }
+                }
+                return closestColor;
+            }
+
+            // Convert to working array
+            const pixels = [];
+            for (let y = 0; y < height; y++) {
+                pixels[y] = [];
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    pixels[y][x] = {
+                        r: data[idx],
+                        g: data[idx + 1],
+                        b: data[idx + 2]
+                    };
+                }
+            }
+
+            // Apply Atkinson dithering
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const oldPixel = pixels[y][x];
+                    const colorIndex = findClosestColor(oldPixel.r, oldPixel.g, oldPixel.b);
+                    const newPixel = palette[colorIndex];
+
+                    // Calculate error
+                    const errorR = oldPixel.r - newPixel[0];
+                    const errorG = oldPixel.g - newPixel[1];
+                    const errorB = oldPixel.b - newPixel[2];
+
+                    // Set quantized pixel
+                    pixels[y][x] = { r: newPixel[0], g: newPixel[1], b: newPixel[2] };
+
+                    // Distribute error (Atkinson pattern)
+                    const directions = [
+                        [1, 0], [2, 0], [0, 1], [1, 1], [-1, 1], [0, 2]
+                    ];
+
+                    for (const [dx, dy] of directions) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            pixels[ny][nx].r = Math.max(0, Math.min(255, pixels[ny][nx].r + errorR / 8));
+                            pixels[ny][nx].g = Math.max(0, Math.min(255, pixels[ny][nx].g + errorG / 8));
+                            pixels[ny][nx].b = Math.max(0, Math.min(255, pixels[ny][nx].b + errorB / 8));
+                        }
+                    }
+                }
+            }
+
+            // Convert back to ImageData
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    data[idx] = pixels[y][x].r;
+                    data[idx + 1] = pixels[y][x].g;
+                    data[idx + 2] = pixels[y][x].b;
+                    data[idx + 3] = 255;
+                }
+            }
+
+            return imageData;
+        }
+
+        // Simple threshold (no dithering)
+        function thresholdQuantize(imageData, width, height, palette) {
+            const data = imageData.data;
+
+            function findClosestColor(r, g, b) {
+                let minDistance = Infinity;
+                let closestColor = 0;
+
+                for (let i = 0; i < palette.length; i++) {
+                    const [pr, pg, pb] = palette[i];
+                    const distance = Math.sqrt((r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = i;
+                    }
+                }
+                return closestColor;
+            }
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const colorIndex = findClosestColor(data[idx], data[idx + 1], data[idx + 2]);
+                    const newColor = palette[colorIndex];
+
+                    data[idx] = newColor[0];
+                    data[idx + 1] = newColor[1];
+                    data[idx + 2] = newColor[2];
+                    data[idx + 3] = 255;
+                }
+            }
+
+            return imageData;
+        }
+
+        // Floyd-Steinberg dithering for multi-color e-paper display
+        function floydSteinbergDither(imageData, width, height, palette) {
+            const data = imageData.data;
+            
+            function findClosestColor(r, g, b) {
+                let minDistance = Infinity;
+                let closestColor = 0;
+                
+                for (let i = 0; i < palette.length; i++) {
+                    const [pr, pg, pb] = palette[i];
+                    const distance = Math.sqrt((r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = i;
+                    }
+                }
+                return closestColor;
+            }
+            
+            // Convert to working array for error diffusion
+            const pixels = [];
+            for (let y = 0; y < height; y++) {
+                pixels[y] = [];
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    pixels[y][x] = {
+                        r: data[idx],
+                        g: data[idx + 1], 
+                        b: data[idx + 2]
+                    };
+                }
+            }
+            
+            // Apply Floyd-Steinberg dithering
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const oldPixel = pixels[y][x];
+                    const colorIndex = findClosestColor(oldPixel.r, oldPixel.g, oldPixel.b);
+                    const newPixel = palette[colorIndex];
+                    
+                    // Calculate quantization error
+                    const errorR = oldPixel.r - newPixel[0];
+                    const errorG = oldPixel.g - newPixel[1];
+                    const errorB = oldPixel.b - newPixel[2];
+                    
+                    // Set the quantized pixel
+                    pixels[y][x] = { r: newPixel[0], g: newPixel[1], b: newPixel[2] };
+                    
+                    // Distribute error to neighboring pixels
+                    // Right pixel (7/16 of error)
+                    if (x + 1 < width) {
+                        pixels[y][x + 1].r = Math.max(0, Math.min(255, pixels[y][x + 1].r + errorR * 7 / 16));
+                        pixels[y][x + 1].g = Math.max(0, Math.min(255, pixels[y][x + 1].g + errorG * 7 / 16));
+                        pixels[y][x + 1].b = Math.max(0, Math.min(255, pixels[y][x + 1].b + errorB * 7 / 16));
+                    }
+                    
+                    if (y + 1 < height) {
+                        // Bottom-left pixel (3/16 of error)
+                        if (x - 1 >= 0) {
+                            pixels[y + 1][x - 1].r = Math.max(0, Math.min(255, pixels[y + 1][x - 1].r + errorR * 3 / 16));
+                            pixels[y + 1][x - 1].g = Math.max(0, Math.min(255, pixels[y + 1][x - 1].g + errorG * 3 / 16));
+                            pixels[y + 1][x - 1].b = Math.max(0, Math.min(255, pixels[y + 1][x - 1].b + errorB * 3 / 16));
+                        }
+                        
+                        // Bottom pixel (5/16 of error)
+                        pixels[y + 1][x].r = Math.max(0, Math.min(255, pixels[y + 1][x].r + errorR * 5 / 16));
+                        pixels[y + 1][x].g = Math.max(0, Math.min(255, pixels[y + 1][x].g + errorG * 5 / 16));
+                        pixels[y + 1][x].b = Math.max(0, Math.min(255, pixels[y + 1][x].b + errorB * 5 / 16));
+                        
+                        // Bottom-right pixel (1/16 of error)
+                        if (x + 1 < width) {
+                            pixels[y + 1][x + 1].r = Math.max(0, Math.min(255, pixels[y + 1][x + 1].r + errorR * 1 / 16));
+                            pixels[y + 1][x + 1].g = Math.max(0, Math.min(255, pixels[y + 1][x + 1].g + errorG * 1 / 16));
+                            pixels[y + 1][x + 1].b = Math.max(0, Math.min(255, pixels[y + 1][x + 1].b + errorB * 1 / 16));
+                        }
+                    }
+                }
+            }
+            
+            // Convert back to ImageData
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    data[idx] = pixels[y][x].r;
+                    data[idx + 1] = pixels[y][x].g;
+                    data[idx + 2] = pixels[y][x].b;
+                    data[idx + 3] = 255; // Alpha
+                }
+            }
+            
+            return imageData;
+        }
+        
+        function quantizeCanvasToDisplayMode() {
+            if (!previewCtx) return;
+
+            const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+            // Define palette based on display mode
+            let palette;
+            if (displayMode === 2) {
+                palette = [
+                    [255, 255, 255], // White
+                    [0, 0, 0]         // Black
+                ];
+            } else if (displayMode === 3) {
+                palette = [
+                    [255, 255, 255], // White
+                    [0, 0, 0],        // Black
+                    [255, 0, 0]       // Red
+                ];
+            } else { // 4-color mode
+                palette = [
+                    [255, 255, 255], // White
+                    [0, 0, 0],        // Black
+                    [255, 0, 0],      // Red
+                    [255, 255, 0]     // Yellow
+                ];
+            }
+
+            // Apply the selected rendering algorithm
+            let processedData;
+            switch (renderMode) {
+                case 'floyd-steinberg':
+                    processedData = floydSteinbergDither(previewImageData, TARGET_SIZE, TARGET_SIZE, palette);
+                    break;
+                case 'atkinson':
+                    processedData = atkinsonDither(previewImageData, TARGET_SIZE, TARGET_SIZE, palette);
+                    break;
+                case 'ordered':
+                    processedData = orderedDither(previewImageData, TARGET_SIZE, TARGET_SIZE, palette);
+                    break;
+                case 'threshold':
+                    processedData = thresholdQuantize(previewImageData, TARGET_SIZE, TARGET_SIZE, palette);
+                    break;
+                default:
+                    processedData = floydSteinbergDither(previewImageData, TARGET_SIZE, TARGET_SIZE, palette);
+            }
+
+            previewCtx.putImageData(processedData, 0, 0);
+
+            console.log(`Applied ${renderMode} rendering for ${displayMode}-color e-paper conversion`);
+        }
+        
+    </script>
+</body>
+</html>
