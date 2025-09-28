@@ -3,265 +3,376 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Sticky Note - Multi-Color WebBluetooth Drawing</title>
+    <title>Otomo-e おとも絵 - AIフォトフレーム</title>
     <style>
+        :root {
+            --primary-color: #2c3e50;    /* Dark blue-gray */
+            --secondary-color: #95a5a6;  /* Light gray */
+            --accent-color: #34495e;     /* Medium blue-gray */
+            --background-color: #fafbfc;
+            --surface-color: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e9ecef;
+            --border-radius: 8px;
+            --shadow-light: 0 2px 8px rgba(44, 62, 80, 0.08);
+            --shadow-medium: 0 4px 16px rgba(44, 62, 80, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: 24px;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
+
         .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 32px;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
         }
+
         h1 {
-            color: #333;
+            color: var(--primary-color);
             text-align: center;
-            margin-bottom: 30px;
+            margin: 0 0 48px 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: -0.02em;
         }
-        .drawing-area {
-            text-align: center;
-            margin: 20px 0;
+        .section {
+            margin: 32px 0;
+            padding: 24px;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
         }
-        #drawCanvas {
-            border: 2px solid #333;
-            background-color: white;
-            cursor: crosshair;
-            border-radius: 5px;
+
+        .section h3 {
+            color: var(--primary-color);
+            margin: 0 0 20px 0;
+            font-size: 1.25rem;
+            font-weight: 500;
         }
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
+
+        .section ol {
+            margin: 0;
+            padding-left: 24px;
+            color: var(--text-secondary);
         }
-        .color-btn {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #333;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s;
+
+        .section li {
+            margin-bottom: 8px;
         }
-        .color-btn.active {
-            transform: scale(1.2);
-            border-width: 4px;
-        }
-        .color-btn.white { background-color: white; }
-        .color-btn.black { background-color: black; }
-        .color-btn.yellow { background-color: #ffff00; }
-        .color-btn.red { background-color: #ff0000; }
-        
+
         button {
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             padding: 12px 24px;
-            margin: 5px;
-            border-radius: 5px;
+            margin: 4px;
+            border-radius: var(--border-radius);
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 120px;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        button:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-light);
         }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
         button:disabled {
-            background-color: #ccc;
+            background-color: var(--secondary-color);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         .status {
             text-align: center;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-weight: bold;
+            padding: 16px 24px;
+            margin: 16px 0;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
         }
+
         .status.disconnected {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+            background-color: #faf9f7;
+            color: var(--text-secondary);
+            border-color: var(--secondary-color);
         }
+
         .status.connected {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #b8daff;
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
         }
+
         .status.sending {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .brush-size {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            margin: 10px 0;
-        }
-        #brushSize {
-            width: 150px;
+            background-color: #f8f9fa;
+            color: var(--accent-color);
+            border-color: var(--accent-color);
         }
         .instructions {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-            border-left: 4px solid #007bff;
+            background-color: var(--surface-color);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            margin: 32px 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
         }
+
         .instructions h3 {
-            margin-top: 0;
-            color: #007bff;
+            margin: 0 0 16px 0;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: 500;
         }
+
         .instructions ol {
-            margin: 10px 0;
-            padding-left: 20px;
+            margin: 0;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions p {
+            margin: 16px 0 0 0;
+            color: var(--text-secondary);
+            font-size: 14px;
         }
         .display-mode-selector {
             text-align: center;
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            margin: 32px 0;
+            padding: 24px;
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
         }
+
         .display-mode-selector h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #333;
+            margin: 0 0 20px 0;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: 500;
         }
+
         .mode-icons {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 16px;
             flex-wrap: wrap;
         }
+
         .mode-icon {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background-color: white;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: var(--surface-color);
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 80px;
+            transition: all 0.2s ease;
+            min-width: 90px;
         }
+
         .mode-icon:hover {
-            border-color: #007bff;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-light);
+            transform: translateY(-2px);
         }
+
         .mode-icon.active {
-            border-color: #007bff;
-            background-color: #e3f2fd;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+            border-color: var(--primary-color);
+            background-color: var(--background-color);
+            box-shadow: var(--shadow-medium);
         }
         .mode-preview {
             display: flex;
-            gap: 4px;
-            margin-bottom: 8px;
+            gap: 6px;
+            margin-bottom: 12px;
+            justify-content: center;
         }
+
         .color-dot {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: inline-block;
+            border: 1px solid var(--border-color);
         }
+
         .mode-label {
             font-size: 14px;
-            font-weight: bold;
-            color: #555;
+            font-weight: 500;
+            color: var(--text-primary);
         }
+
         .photo-controls {
             text-align: center;
-            margin: 20px 0;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 32px 0;
+            padding: 24px;
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
         }
+
         .photo-controls h3 {
-            margin-top: 0;
-            color: #333;
+            margin: 0 0 20px 0;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: 500;
         }
         .preview-container {
-            margin: 20px 0;
+            margin: 24px 0;
             text-align: center;
         }
-        #previewCanvas {
-            border: 2px solid #28a745;
-            border-radius: 5px;
-            background-color: white;
+
+        .preview-container h4 {
+            margin: 0 0 16px 0;
+            color: var(--primary-color);
+            font-size: 1rem;
+            font-weight: 500;
         }
+
+        #previewCanvas {
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: var(--shadow-light);
+        }
+
         .render-mode-selector {
             text-align: center;
-            margin: 15px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+            margin: 20px 0;
+            padding: 16px;
+            background-color: var(--background-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
         }
+
         .render-mode-selector h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 16px;
+            margin: 0 0 12px 0;
+            color: var(--primary-color);
+            font-size: 1rem;
+            font-weight: 500;
         }
+
         .render-mode-options {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
+
         .render-mode-btn {
             padding: 8px 16px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--border-color);
             border-radius: 20px;
-            background-color: white;
+            background-color: var(--surface-color);
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            min-width: 80px;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            min-width: 75px;
+            color: var(--text-primary);
         }
+
         .render-mode-btn:hover {
-            border-color: #007bff;
-            box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-light);
         }
+
         .render-mode-btn.active {
-            border-color: #007bff;
-            background-color: #007bff;
+            border-color: var(--primary-color);
+            background-color: var(--primary-color);
             color: white;
+        }
+        .progress-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .compression-info {
+            margin: 12px 0 0 0;
+            padding: 12px;
+            background-color: var(--background-color);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📷 AI Photo Frame</h1>
-        
-        <div class="instructions">
-            <h3>使い方</h3>
-            <ol>
-                <li>「Connect to ESP32」ボタンを押してESP32と接続</li>
-                <li>表示モード（2色・3色・4色）を選択</li>
-                <li>写真を選択して正方形にトリミング</li>
-                <li>選択したモードでプレビューし、送信ボタンでe-paperに送信</li>
-            </ol>
-            <p><strong>注意:</strong> WebBluetoothはHTTPS環境またはlocalhostでのみ動作します</p>
-        </div>
-        
-        <div id="status" class="status disconnected">
-            ESP32との接続が必要です
-        </div>
-        
-        <div style="text-align: center; margin: 20px 0;">
-            <button id="connectBtn" onclick="connectToESP32()">Connect to ESP32</button>
+        <h1>Otomo-e おとも絵</h1>
+
+        <div class="section" style="text-align: center; margin: 24px 0;">
+            <p style="color: var(--text-secondary); margin: 0 0 12px 0;">オープンソースAIフォトフレーム</p>
+            <a href="https://github.com/manomono-23/otomo-e" target="_blank"
+               style="color: var(--primary-color); text-decoration: none; font-weight: 500; font-size: 14px;">
+                GitHub で詳細を見る →
+            </a>
         </div>
 
-        <div class="display-mode-selector">
+        <div id="browserInfo" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;">
+            <!-- Browser compatibility info will be inserted here dynamically -->
+        </div>
+
+        <div class="display-mode-selector" style="display: none;">
             <h3>表示モード</h3>
             <div class="mode-icons">
                 <div class="mode-icon" data-mode="2" onclick="selectDisplayMode(2)">
@@ -292,7 +403,7 @@
         </div>
         
         <div class="photo-controls">
-            <h3>📷 写真を選択</h3>
+            <h3>写真を選択</h3>
             <div style="margin: 20px 0;">
                 <input id="photoInput" type="file" accept="image/*" style="display:none" onchange="onPhotoSelected(event)" />
                 <button onclick="document.getElementById('photoInput').click()">写真を選択</button>
@@ -300,7 +411,7 @@
 
             <div id="previewArea" style="display: none;">
                 <div class="render-mode-selector">
-                    <h4>🎨 描画モード</h4>
+                    <h4>描画モード</h4>
                     <div class="render-mode-options">
                         <div class="render-mode-btn active" onclick="selectRenderMode('floyd-steinberg')" title="高品質なグラデーション">点描</div>
                         <div class="render-mode-btn" onclick="selectRenderMode('atkinson')" title="Mac風のソフトなディザ">ソフト</div>
@@ -312,12 +423,47 @@
                     <h4>プレビュー（自動正方形切り取り）</h4>
                     <canvas id="previewCanvas" width="200" height="200"></canvas>
                 </div>
+                <div class="progress-container" id="progressContainer">
+                    <div class="compression-info" id="compressionInfo"></div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">準備中...</div>
+                </div>
+                <div id="status" class="status disconnected" style="margin: 20px 0;">
+                    写真を選択してから接続してください
+                </div>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <button id="connectBtn" onclick="connectToDevice()" disabled>デバイスに接続</button>
+                </div>
+
                 <div style="margin: 20px 0;">
                     <button id="sendBtn" onclick="sendImage()" disabled>送信</button>
                     <button onclick="resetPhoto()">新しい写真を選択</button>
                 </div>
             </div>
         </div>
+
+        <footer style="text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+            <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 8px 0;">
+                Otomo-e は MIT License のもとでオープンソース公開されています
+            </p>
+            <div style="margin: 12px 0;">
+                <a href="https://github.com/manomono-23/otomo-e" target="_blank"
+                   style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
+                    プロジェクトページ
+                </a>
+                <a href="https://github.com/manomono-23/otomo-e/issues" target="_blank"
+                   style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
+                    問題報告
+                </a>
+                <a href="https://github.com/manomono-23/otomo-e/blob/main/README.md" target="_blank"
+                   style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
+                    ドキュメント
+                </a>
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -328,6 +474,7 @@
         // Command types for ESP32
         const COMMAND_TYPE = {
             DRAW_DATA: 0x01,
+            RLE_COMPRESSED_DATA: 0x02,
             COMPRESSED_DATA: 0x03,
             STATUS_REQUEST: 0x04,
             SET_MODE: 0x05
@@ -360,11 +507,63 @@
                 previewCtx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
             }
 
-            updateStatus('ESP32との接続が必要です', 'disconnected');
+            updateStatus('写真を選択してから接続してください', 'disconnected');
+
+            // Check WebBluetooth support and show appropriate info
+            checkWebBluetoothSupport();
 
             // Initialize display mode
             selectDisplayMode(4);
         };
+
+        function checkWebBluetoothSupport() {
+            const browserInfo = document.getElementById('browserInfo');
+
+            // Check if user agent contains Bluefy (already working)
+            if (navigator.userAgent.includes('Bluefy')) {
+                browserInfo.style.display = 'none';
+                return true;
+            }
+
+            // Check WebBluetooth support
+            if (!navigator.bluetooth) {
+                // WebBluetooth not supported
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+                if (isIOS) {
+                    // iOS device - recommend Bluefy
+                    browserInfo.innerHTML = `
+                        <p><strong>WebBluetoothが利用できません</strong></p>
+                        <p><strong>iOSをご利用の方:</strong> Safari等の標準ブラウザではWebBluetoothが利用できません。<br>
+                        <a href="https://apps.apple.com/jp/app/bluefy-web-ble-browser/id1492822055" target="_blank" style="color: var(--primary-color); text-decoration: none;">
+                        <strong>Bluefy - Web BLE Browser</strong></a> アプリをダウンロードしてご利用ください。</p>
+                    `;
+                    browserInfo.style.backgroundColor = 'var(--background-color)';
+                    browserInfo.style.borderLeft = '4px solid var(--secondary-color)';
+                } else {
+                    // Other platforms - show general error
+                    browserInfo.innerHTML = `
+                        <p><strong>WebBluetoothが利用できません</strong></p>
+                        <p>このブラウザはWebBluetoothに対応していません。<br>
+                        Chrome、Edge、Operaなどの対応ブラウザをご利用ください。</p>
+                    `;
+                    browserInfo.style.backgroundColor = 'var(--background-color)';
+                    browserInfo.style.borderLeft = '4px solid var(--accent-color)';
+                }
+
+                browserInfo.style.display = 'block';
+                return false;
+            }
+
+            // WebBluetooth is supported
+            browserInfo.style.display = 'none';
+            return true;
+        }
+
+        function checkAndHideBrowserInfo() {
+            // Legacy function - now calls the new comprehensive check
+            return checkWebBluetoothSupport();
+        }
         
         // Photo processing functions
         function onPhotoSelected(event) {
@@ -407,17 +606,45 @@
             // Apply display mode quantization
             quantizeCanvasToDisplayMode();
 
-            // Show preview area
+            // Show preview area and enable connection
             document.getElementById('previewArea').style.display = 'block';
-            document.getElementById('sendBtn').disabled = !isConnected;
+            updateUIForPhotoSelected();
 
             console.log('Image processed and preview updated');
+        }
+
+        function updateUIForPhotoSelected() {
+            // Check WebBluetooth support before enabling connection
+            const webBluetoothSupported = checkWebBluetoothSupport();
+
+            if (webBluetoothSupported) {
+                // Enable connect button and update status
+                document.getElementById('connectBtn').disabled = false;
+                updateStatus('写真が選択されました。デバイスに接続してください', 'disconnected');
+            } else {
+                // Keep connect button disabled if WebBluetooth not supported
+                document.getElementById('connectBtn').disabled = true;
+                updateStatus('WebBluetoothが利用できません', 'disconnected');
+            }
+
+            // Send button remains disabled until connected
+            document.getElementById('sendBtn').disabled = true;
         }
 
         function resetPhoto() {
             document.getElementById('previewArea').style.display = 'none';
             document.getElementById('photoInput').value = '';
             originalImage = null;
+
+            // Reset UI state
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            updateStatus('写真を選択してから接続してください', 'disconnected');
+
+            // If connected, disconnect
+            if (isConnected) {
+                disconnect();
+            }
         }
 
         function selectDisplayMode(mode) {
@@ -480,10 +707,66 @@
             }
         }
         
+        // Compare data sizes and choose optimal compression
+        function chooseOptimalCompression() {
+            // Get raw image data size
+            let rawDataSize;
+            if (displayMode === 2) {
+                rawDataSize = 5000; // 1 bit per pixel
+            } else {
+                rawDataSize = 10000; // 2 bits per pixel
+            }
+
+            // Get RLE compressed size
+            const rleData = convertCanvasToRLE();
+            const rleDataSize = rleData.length;
+
+            console.log(`Data size comparison: Raw=${rawDataSize} bytes, RLE=${rleDataSize} bytes`);
+
+            // Return the optimal choice
+            if (rleDataSize < rawDataSize) {
+                return {
+                    useRLE: true,
+                    rawSize: rawDataSize,
+                    compressedSize: rleDataSize,
+                    savings: ((rawDataSize - rleDataSize) / rawDataSize * 100).toFixed(1),
+                    data: rleData
+                };
+            } else {
+                return {
+                    useRLE: false,
+                    rawSize: rawDataSize,
+                    compressedSize: rawDataSize,
+                    savings: 0,
+                    data: null
+                };
+            }
+        }
+
+        // Updated progress display functions
+        function showProgress() {
+            document.getElementById('progressContainer').style.display = 'block';
+        }
+
+        function hideProgress() {
+            document.getElementById('progressContainer').style.display = 'none';
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function showCompressionInfo(info) {
+            const compressionDiv = document.getElementById('compressionInfo');
+            // Hide compression info for cleaner UI
+            compressionDiv.style.display = 'none';
+        }
+
         // Send image function
         function sendImage() {
             if (!isConnected || !bluetoothCharacteristic) {
-                alert('ESP32に接続してください');
+                alert('デバイスに接続してください');
                 return;
             }
 
@@ -492,7 +775,7 @@
                 return;
             }
 
-            sendImageData();
+            sendImageDataOptimized();
         }
         
         function updateStatus(message, type) {
@@ -503,9 +786,9 @@
         
         function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-        async function connectToESP32() {
+        async function connectToDevice() {
             try {
-                updateStatus('ESP32を検索中...', 'disconnected');
+                updateStatus('デバイスを検索中...', 'disconnected');
                 
                 // Request a device advertising our service (more reliable than name filter)
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
@@ -522,13 +805,28 @@
                 await connectGattWithRetry(3);
                 
                 isConnected = true;
-                updateStatus('ESP32に接続済み', 'connected');
-                document.getElementById('connectBtn').textContent = 'Disconnect';
-                document.getElementById('connectBtn').onclick = disconnect;
-                // Enable send button only if preview is available
-                if (previewCtx && originalImage) {
-                    document.getElementById('sendBtn').disabled = false;
+
+                // Auto-detect display mode from device name
+                const deviceName = bluetoothDevice.name || '';
+                console.log('Connected device name:', deviceName);
+
+                if (deviceName.includes('2C')) {
+                    selectDisplayMode(2);
+                    console.log('Auto-detected 2-color mode from device name');
+                } else if (deviceName.includes('3C')) {
+                    selectDisplayMode(3);
+                    console.log('Auto-detected 3-color mode from device name');
+                } else {
+                    // Default to 3-color for Otomo-e devices
+                    selectDisplayMode(3);
+                    console.log('Default to 3-color mode for Otomo-e device');
                 }
+
+                updateStatus(`デバイスに接続済み (${displayMode}色モード) - 送信可能です`, 'connected');
+                document.getElementById('connectBtn').textContent = '切断';
+                document.getElementById('connectBtn').onclick = disconnect;
+                // Enable send button (photo should already be selected at this point)
+                document.getElementById('sendBtn').disabled = false;
                 
             } catch (error) {
                 console.error('Connection failed:', error);
@@ -568,9 +866,18 @@
         function onDisconnected() {
             isConnected = false;
             bluetoothCharacteristic = null;
-            updateStatus('ESP32との接続が切断されました', 'disconnected');
-            document.getElementById('connectBtn').textContent = 'Connect to ESP32';
-            document.getElementById('connectBtn').onclick = connectToESP32;
+
+            // Update UI based on whether photo is selected
+            if (originalImage) {
+                updateStatus('接続が切断されました。再接続してください', 'disconnected');
+                document.getElementById('connectBtn').disabled = false;
+            } else {
+                updateStatus('写真を選択してから接続してください', 'disconnected');
+                document.getElementById('connectBtn').disabled = true;
+            }
+
+            document.getElementById('connectBtn').textContent = 'デバイスに接続';
+            document.getElementById('connectBtn').onclick = connectToDevice;
             document.getElementById('sendBtn').disabled = true;
         }
         
@@ -580,16 +887,31 @@
             }
         }
         
-        async function sendImageData() {
+        async function sendImageDataOptimized() {
             try {
-                updateStatus('画像データを送信中...', 'sending');
+                showProgress();
+                updateProgress(0, 'データを分析中...');
 
-                // Convert preview canvas to image data with command header
-                const imagePacket = createImageDataPacket();
+                // Choose optimal compression method
+                const compressionInfo = chooseOptimalCompression();
+                showCompressionInfo(compressionInfo);
+
+                updateProgress(20, 'パケットを作成中...');
+
+                let imagePacket;
+                if (compressionInfo.useRLE) {
+                    imagePacket = createRLEDataPacket(compressionInfo.data);
+                } else {
+                    imagePacket = createImageDataPacket();
+                }
+
+                updateProgress(30, '送信を開始...');
 
                 // Send data in chunks optimized for BLE maximum throughput
                 const CHUNK_SIZE = 244;  // BLE 4.2 maximum payload size
                 const totalChunks = Math.ceil(imagePacket.length / CHUNK_SIZE);
+
+                console.log(`Sending ${imagePacket.length} bytes in ${totalChunks} chunks using ${compressionInfo.useRLE ? 'RLE' : 'RAW'} format`);
 
                 // Send data sequentially with optimized timing
                 for (let i = 0; i < imagePacket.length; i += CHUNK_SIZE) {
@@ -598,17 +920,14 @@
 
                     if (i === 0) {
                         console.log('First packet header byte:', imagePacket[0]);
-                        console.log('First chunk first byte:', chunk[0]);
                     }
-
-                    console.log(`Sending chunk ${chunkIndex + 1}/${totalChunks}: ${chunk.length} bytes`);
 
                     // Send chunk and wait for completion
                     await bluetoothCharacteristic.writeValue(chunk);
 
                     // Update progress
-                    const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
-                    updateStatus(`送信中... ${progress}% (${chunkIndex + 1}/${totalChunks})`, 'sending');
+                    const transferProgress = 30 + Math.round(((chunkIndex + 1) / totalChunks) * 60);
+                    updateProgress(transferProgress, `送信中... ${chunkIndex + 1}/${totalChunks} (${Math.round(((chunkIndex + 1) / totalChunks) * 100)}%)`);
 
                     // Optimized delay: no delay for first few chunks, then minimal delay
                     if (chunkIndex > 2 && i + CHUNK_SIZE < imagePacket.length) {
@@ -616,65 +935,86 @@
                     }
                 }
 
-                updateStatus('送信完了 - ESP32で表示されます', 'connected');
+                updateProgress(95, '処理中...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                updateProgress(100, '送信完了！');
                 console.log('All data sent successfully');
+
+                // Hide progress after a short delay
+                setTimeout(() => {
+                    hideProgress();
+                }, 2000);
 
             } catch (error) {
                 console.error('Send failed:', error);
-                updateStatus('送信に失敗しました: ' + error.message, 'connected');
+                updateProgress(0, '送信に失敗しました');
+                setTimeout(() => {
+                    hideProgress();
+                }, 3000);
             }
         }
+
+        async function sendImageData() {
+            // Keep original function for backward compatibility
+            return sendImageDataOptimized();
+        }
         
-        function convertCanvasToCompressedData() {
+        function convertCanvasToRLE() {
             // Get preview canvas image data
             const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
             const pixels = previewImageData.data;
-            
+
             // Convert to pixel values first
             const pixelValues = new Array(TARGET_SIZE * TARGET_SIZE);
             for (let y = 0; y < TARGET_SIZE; y++) {
                 for (let x = 0; x < TARGET_SIZE; x++) {
                     const pixelIndex = y * TARGET_SIZE + x;
                     const rgbaIndex = pixelIndex * 4;
-                    
+
                     const r = pixels[rgbaIndex];
                     const g = pixels[rgbaIndex + 1];
                     const b = pixels[rgbaIndex + 2];
-                    
+
                     if (r === 0 && g === 0 && b === 0) {
                         pixelValues[pixelIndex] = 0x01; // Black
-                    } else if (r === 255 && g === 255 && b === 0) {
-                        pixelValues[pixelIndex] = 0x02; // Yellow
-                    } else if (r === 255 && g === 0 && b === 0) {
-                        pixelValues[pixelIndex] = 0x03; // Red
+                    } else if (displayMode >= 3 && r === 255 && g === 0 && b === 0) {
+                        pixelValues[pixelIndex] = 0x02; // Red
+                    } else if (displayMode >= 4 && r === 255 && g === 255 && b === 0) {
+                        pixelValues[pixelIndex] = 0x03; // Yellow
                     } else {
                         pixelValues[pixelIndex] = 0x00; // White
                     }
                 }
             }
-            
+
             // RLE compress the pixel data
             const compressed = [];
             let i = 0;
             while (i < pixelValues.length) {
                 const currentPixel = pixelValues[i];
                 let runLength = 1;
-                
+
                 // Count consecutive identical pixels (max 255)
-                while (i + runLength < pixelValues.length && 
-                       pixelValues[i + runLength] === currentPixel && 
+                while (i + runLength < pixelValues.length &&
+                       pixelValues[i + runLength] === currentPixel &&
                        runLength < 255) {
                     runLength++;
                 }
-                
+
                 // Store as [length, value] pairs
                 compressed.push(runLength);
                 compressed.push(currentPixel);
-                
+
                 i += runLength;
             }
-            
+
             return new Uint8Array(compressed);
+        }
+
+        function convertCanvasToCompressedData() {
+            // This function is kept for backward compatibility
+            return convertCanvasToRLE();
         }
         
         function convertCanvasToImageData() {
@@ -726,13 +1066,30 @@
             }
         }
         
+        function createRLEDataPacket(rleData) {
+            // Create packet with RLE compressed data header
+            // [0] Command Type (0x02 = RLE compressed data)
+            // [1] Display mode
+            // [2-3] Data length (16-bit)
+            // [4...] RLE compressed data
+            const packet = new Uint8Array(4 + rleData.length);
+            packet[0] = COMMAND_TYPE.RLE_COMPRESSED_DATA; // RLE compressed data command
+            packet[1] = displayMode; // Include display mode
+            packet[2] = rleData.length & 0xFF; // Length low byte
+            packet[3] = (rleData.length >> 8) & 0xFF; // Length high byte
+            packet.set(rleData, 4);
+
+            console.log(`Created RLE packet: ${packet.length} bytes (${rleData.length} compressed data)`);
+            return packet;
+        }
+
         function createCompressedDataPacket() {
             // Try RLE compression first
             const compressedData = convertCanvasToCompressedData();
-            
+
             console.log(`Original size: 10000 bytes, Compressed size: ${compressedData.length} bytes`);
             console.log(`Compression ratio: ${(compressedData.length / 10000 * 100).toFixed(1)}%`);
-            
+
             // Create packet with compressed data header
             // [0] Command Type (0x03 = compressed data)
             // [1-2] Data length (16-bit)
@@ -742,7 +1099,7 @@
             packet[1] = compressedData.length & 0xFF; // Length low byte
             packet[2] = (compressedData.length >> 8) & 0xFF; // Length high byte
             packet.set(compressedData, 3);
-            
+
             return packet;
         }
         
