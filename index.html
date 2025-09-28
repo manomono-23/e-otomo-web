@@ -467,9 +467,9 @@
     </div>
 
     <script>
-        // WebBluetooth settings
-        // UUIDs are now generated dynamically by each device
-        // Service and characteristic discovery is done at runtime
+        // WebBluetooth settings - Fixed UUIDs
+        const SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';
+        const CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
         
         // Command types for ESP32
         const COMMAND_TYPE = {
@@ -567,13 +567,21 @@
         
         // Photo processing functions
         function onPhotoSelected(event) {
+            console.log('onPhotoSelected called');
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
+
+            console.log('File selected:', file.name, file.type);
 
             const reader = new FileReader();
             reader.onload = function(e) {
+                console.log('File loaded');
                 const img = new Image();
                 img.onload = function() {
+                    console.log('Image loaded:', img.width, 'x', img.height);
                     originalImage = img;
                     processImageToSquare(img);
                 };
@@ -614,17 +622,22 @@
         }
 
         function updateUIForPhotoSelected() {
+            console.log('updateUIForPhotoSelected called');
+
             // Check WebBluetooth support before enabling connection
             const webBluetoothSupported = checkWebBluetoothSupport();
+            console.log('WebBluetooth support:', webBluetoothSupported);
 
             if (webBluetoothSupported) {
                 // Enable connect button and update status
                 document.getElementById('connectBtn').disabled = false;
                 updateStatus('写真が選択されました。デバイスに接続してください', 'disconnected');
+                console.log('Connect button enabled');
             } else {
                 // Keep connect button disabled if WebBluetooth not supported
                 document.getElementById('connectBtn').disabled = true;
                 updateStatus('WebBluetoothが利用できません', 'disconnected');
+                console.log('Connect button disabled - no WebBluetooth support');
             }
 
             // Send button remains disabled until connected
@@ -790,17 +803,19 @@
             try {
                 updateStatus('デバイスを検索中...', 'disconnected');
                 
-                // Request any device - allows access to all services
+                updateStatus('Otomoeデバイスを検索中...', 'disconnected');
+
+                // Filter by service UUID - this will show only Otomoe devices
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: [] // This allows access to all services
+                    filters: [
+                        { services: [SERVICE_UUID] }
+                    ],
+                    optionalServices: [SERVICE_UUID]
                 });
 
-                // Check if this is an Otomo-e device
+                // Validate that the selected device is an Otomoe device
                 const deviceName = bluetoothDevice.name || '';
-                if (!deviceName.startsWith('Otomo-e')) {
-                    throw new Error('選択されたデバイスはOtomo-eではありません: ' + deviceName);
-                }
+                console.log('Selected device:', deviceName);
 
                 // Request larger MTU size for faster data transfer
                 // Note: This is handled automatically by the browser, but we can optimize our approach
@@ -813,7 +828,6 @@
                 isConnected = true;
 
                 // Auto-detect display mode from device name
-                const deviceName = bluetoothDevice.name || '';
                 console.log('Connected device name:', deviceName);
 
                 if (deviceName.includes('2C')) {
@@ -823,9 +837,9 @@
                     selectDisplayMode(3);
                     console.log('Auto-detected 3-color mode from device name');
                 } else {
-                    // Default to 3-color for Otomo-e devices
+                    // Default to 3-color for Otomoe devices
                     selectDisplayMode(3);
-                    console.log('Default to 3-color mode for Otomo-e device');
+                    console.log('Default to 3-color mode for Otomoe device');
                 }
 
                 updateStatus(`デバイスに接続済み (${displayMode}色モード) - 送信可能です`, 'connected');
@@ -858,36 +872,9 @@
 
                     const server = await bluetoothDevice.gatt.connect();
 
-                    // Discover all services dynamically
-                    const services = await server.getPrimaryServices();
-                    console.log('Discovered services:', services.length);
-
-                    let foundService = null;
-                    let foundCharacteristic = null;
-
-                    // Look for a service with a writable characteristic
-                    for (const service of services) {
-                        try {
-                            const characteristics = await service.getCharacteristics();
-                            for (const char of characteristics) {
-                                if (char.properties.write || char.properties.writeWithoutResponse) {
-                                    foundService = service;
-                                    foundCharacteristic = char;
-                                    console.log('Found writable characteristic:', char.uuid);
-                                    break;
-                                }
-                            }
-                            if (foundCharacteristic) break;
-                        } catch (e) {
-                            console.log('Error checking service:', e);
-                        }
-                    }
-
-                    if (!foundCharacteristic) {
-                        throw new Error('No writable characteristic found');
-                    }
-
-                    bluetoothCharacteristic = foundCharacteristic;
+                    // Connect to the specific service and characteristic
+                    const service = await server.getPrimaryService(SERVICE_UUID);
+                    bluetoothCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
                     return; // success
                 } catch (e) {
                     lastErr = e;
