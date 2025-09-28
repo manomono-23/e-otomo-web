@@ -790,19 +790,23 @@
             try {
                 updateStatus('デバイスを検索中...', 'disconnected');
                 
-                // Request a device by name pattern (since UUIDs are now random)
+                // Request any device - allows access to all services
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [
-                        { namePrefix: "Otomo-e" }
-                    ],
-                    optionalServices: [] // We'll discover services dynamically
+                    acceptAllDevices: true,
+                    optionalServices: [] // This allows access to all services
                 });
-                
+
+                // Check if this is an Otomo-e device
+                const deviceName = bluetoothDevice.name || '';
+                if (!deviceName.startsWith('Otomo-e')) {
+                    throw new Error('選択されたデバイスはOtomo-eではありません: ' + deviceName);
+                }
+
                 // Request larger MTU size for faster data transfer
                 // Note: This is handled automatically by the browser, but we can optimize our approach
-                
+
                 bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
-                
+
                 // Robust connect + service/characteristic discovery with retries
                 await connectGattWithRetry(3);
                 
