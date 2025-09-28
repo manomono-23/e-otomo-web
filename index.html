@@ -468,8 +468,8 @@
 
     <script>
         // WebBluetooth settings
-        const SERVICE_UUID = '12345678-1234-5678-9abc-123456789abc';
-        const CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abc';
+        // UUIDs are now generated dynamically by each device
+        // Service and characteristic discovery is done at runtime
         
         // Command types for ESP32
         const COMMAND_TYPE = {
@@ -790,10 +790,12 @@
             try {
                 updateStatus('デバイスを検索中...', 'disconnected');
                 
-                // Request a device advertising our service (more reliable than name filter)
+                // Request a device by name pattern (since UUIDs are now random)
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [SERVICE_UUID] }],
-                    optionalServices: [SERVICE_UUID]
+                    filters: [
+                        { namePrefix: "Otomo-e" }
+                    ],
+                    optionalServices: [] // We'll discover services dynamically
                 });
                 
                 // Request larger MTU size for faster data transfer
@@ -851,8 +853,37 @@
                     } catch (_) {}
 
                     const server = await bluetoothDevice.gatt.connect();
-                    const service = await server.getPrimaryService(SERVICE_UUID);
-                    bluetoothCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+                    // Discover all services dynamically
+                    const services = await server.getPrimaryServices();
+                    console.log('Discovered services:', services.length);
+
+                    let foundService = null;
+                    let foundCharacteristic = null;
+
+                    // Look for a service with a writable characteristic
+                    for (const service of services) {
+                        try {
+                            const characteristics = await service.getCharacteristics();
+                            for (const char of characteristics) {
+                                if (char.properties.write || char.properties.writeWithoutResponse) {
+                                    foundService = service;
+                                    foundCharacteristic = char;
+                                    console.log('Found writable characteristic:', char.uuid);
+                                    break;
+                                }
+                            }
+                            if (foundCharacteristic) break;
+                        } catch (e) {
+                            console.log('Error checking service:', e);
+                        }
+                    }
+
+                    if (!foundCharacteristic) {
+                        throw new Error('No writable characteristic found');
+                    }
+
+                    bluetoothCharacteristic = foundCharacteristic;
                     return; // success
                 } catch (e) {
                     lastErr = e;
