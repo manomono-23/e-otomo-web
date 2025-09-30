@@ -471,7 +471,7 @@
         const SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';
         const CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
         
-        // Command types for ESP32
+        // Command types for nRF52840
         const COMMAND_TYPE = {
             DRAW_DATA: 0x01,
             RLE_COMPRESSED_DATA: 0x02,
@@ -679,9 +679,9 @@
                 processImageToSquare(originalImage);
             }
 
-            // Send mode to ESP32 if connected
+            // Send mode to nRF52840 if connected
             if (isConnected && bluetoothCharacteristic) {
-                sendModeToESP32();
+                sendModeToDevice();
             }
         }
 
@@ -705,14 +705,14 @@
             }
         }
 
-        async function sendModeToESP32() {
+        async function sendModeToDevice() {
             try {
                 const modePacket = new Uint8Array(2);
                 modePacket[0] = COMMAND_TYPE.SET_MODE;
                 modePacket[1] = displayMode;
 
                 await bluetoothCharacteristic.writeValue(modePacket);
-                console.log('Mode sent to ESP32:', displayMode);
+                console.log('Mode sent to nRF52840:', displayMode);
                 updateStatus(`モード設定完了: ${displayMode}色モード`, 'connected');
             } catch (error) {
                 console.error('Failed to send mode:', error);

@@ -6,12 +6,12 @@
 
 ## 関連リポジトリ
 
-- **メインファームウェア**: [otomo-e](https://github.com/manomono-23/otomo-e) - nRF52840用ファームウェア
-- **Webアプリケーション**: [otomo-e-web](https://github.com/manomono-23/otomo-e-web) (このリポジトリ)
+- **メインファームウェア**: [otomo-e](https://github.com/manomono-23/e-otomo) - nRF52840用ファームウェア
+- **Webアプリケーション**: [otomo-e-web](https://github.com/manomono-23/e-otomo-web) (このリポジトリ)
 
 ## ライブデモ
 
-🌐 [art-frame.manomono.net](http://art-frame.manomono.net/)
+🌐 [art-frame.manomono.net](http://e-otomo.manomono.net/)
 
 ## 特徴
 
