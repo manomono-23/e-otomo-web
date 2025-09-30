@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Otomo-e おとも絵 - AIフォトフレーム</title>
+    <title>e-Otomo えおとも - AIフォトフレーム</title>
     <style>
         :root {
             --primary-color: #2c3e50;    /* Dark blue-gray */
@@ -358,11 +358,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>Otomo-e おとも絵</h1>
+        <h1>e-Otomo えおとも</h1>
 
         <div class="section" style="text-align: center; margin: 24px 0;">
             <p style="color: var(--text-secondary); margin: 0 0 12px 0;">オープンソースAIフォトフレーム</p>
-            <a href="https://github.com/manomono-23/otomo-e" target="_blank"
+            <a href="https://github.com/manomono-23/e-otomo" target="_blank"
                style="color: var(--primary-color); text-decoration: none; font-weight: 500; font-size: 14px;">
                 GitHub で詳細を見る →
             </a>
@@ -447,18 +447,18 @@
 
         <footer style="text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border-color);">
             <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 8px 0;">
-                Otomo-e は MIT License のもとでオープンソース公開されています
+                e-Otomo は MIT License のもとでオープンソース公開されています
             </p>
             <div style="margin: 12px 0;">
-                <a href="https://github.com/manomono-23/otomo-e" target="_blank"
+                <a href="https://github.com/manomono-23/e-otomo" target="_blank"
                    style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
                     プロジェクトページ
                 </a>
-                <a href="https://github.com/manomono-23/otomo-e/issues" target="_blank"
+                <a href="https://github.com/manomono-23/e-otomo/issues" target="_blank"
                    style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
                     問題報告
                 </a>
-                <a href="https://github.com/manomono-23/otomo-e/blob/main/README.md" target="_blank"
+                <a href="https://github.com/manomono-23/e-otomo/blob/main/README.md" target="_blank"
                    style="color: var(--primary-color); text-decoration: none; margin: 0 12px; font-size: 14px;">
                     ドキュメント
                 </a>
@@ -803,9 +803,9 @@
             try {
                 updateStatus('デバイスを検索中...', 'disconnected');
                 
-                updateStatus('Otomoeデバイスを検索中...', 'disconnected');
+                updateStatus('e-Otomoデバイスを検索中...', 'disconnected');
 
-                // Filter by service UUID - this will show only Otomoe devices
+                // Filter by service UUID - this will show only e-Otomo devices
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [SERVICE_UUID] }
@@ -813,7 +813,7 @@
                     optionalServices: [SERVICE_UUID]
                 });
 
-                // Validate that the selected device is an Otomoe device
+                // Validate that the selected device is an e-Otomo device
                 const deviceName = bluetoothDevice.name || '';
                 console.log('Selected device:', deviceName);
 
@@ -837,9 +837,9 @@
                     selectDisplayMode(3);
                     console.log('Auto-detected 3-color mode from device name');
                 } else {
-                    // Default to 3-color for Otomoe devices
+                    // Default to 3-color for e-Otomo devices
                     selectDisplayMode(3);
-                    console.log('Default to 3-color mode for Otomoe device');
+                    console.log('Default to 3-color mode for e-Otomo device');
                 }
 
                 updateStatus(`デバイスに接続済み (${displayMode}色モード) - 送信可能です`, 'connected');

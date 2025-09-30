@@ -1,13 +1,13 @@
-# Otomo-e Web Interface おとも絵
+# e-Otomo Web Interface えおとも
 
-**Otomo-eフォトフレーム用WebBluetoothアプリケーション**
+**e-Otomoフォトフレーム用WebBluetoothアプリケーション**
 
-このリポジトリは、Otomo-eフォトフレームデバイスと通信するためのWebアプリケーションです。WebBluetooth APIを使用してスマートフォンやPCから直接写真を送信できます。
+このリポジトリは、e-Otomoフォトフレームデバイスと通信するためのWebアプリケーションです。WebBluetooth APIを使用してスマートフォンやPCから直接写真を送信できます。
 
 ## 関連リポジトリ
 
-- **メインファームウェア**: [otomo-e](https://github.com/manomono-23/e-otomo) - nRF52840用ファームウェア
-- **Webアプリケーション**: [otomo-e-web](https://github.com/manomono-23/e-otomo-web) (このリポジトリ)
+- **メインファームウェア**: [e-Otomo](https://github.com/manomono-23/e-otomo) - nRF52840用ファームウェア
+- **Webアプリケーション**: [e-Otomo-web](https://github.com/manomono-23/e-otomo-web) (このリポジトリ)
 
 ## ライブデモ
 
@@ -42,8 +42,8 @@
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/manomono-23/otomo-e-web.git
-cd otomo-e-web
+git clone https://github.com/manomono-23/e-otomo-web.git
+cd e-otomo-web
 
 # HTTPSサーバーで起動（WebBluetoothにはHTTPS必須）
 # Python 3の場合
@@ -64,7 +64,7 @@ npx http-server -S -C cert.pem -K key.pem
 
 ### 基本操作
 
-1. **デバイス準備**: Otomo-eデバイスの電源を入れ、ボタン長押しでQRコード表示
+1. **デバイス準備**: e-Otomoデバイスの電源を入れ、ボタン長押しでQRコード表示
 2. **Webアプリアクセス**: QRコードをスキャンまたは直接URLアクセス
 3. **写真選択**: 送信したい写真を選択
 4. **デバイス接続**: 「デバイスに接続」ボタンをクリック
@@ -111,7 +111,7 @@ web/
 
 ## ハードウェア要件
 
-Otomo-eデバイスが必要です。詳細は[メインリポジトリ](https://github.com/manomono-23/otomo-e)を参照してください。
+e-Otomoデバイスが必要です。詳細は[メインリポジトリ](https://github.com/manomono-23/e-otomo)を参照してください。
 
 ### 必要な部品
 
@@ -127,7 +127,7 @@ Otomo-eデバイスが必要です。詳細は[メインリポジトリ](https:/
 1. **HTTPS確認**: WebBluetoothはHTTPS必須
 2. **ブラウザ対応**: Chrome/Edge/Operaを使用
 3. **Bluetooth有効**: デバイスのBluetoothがONか確認
-4. **デバイス状態**: Otomo-eが接続待機中か確認
+4. **デバイス状態**: e-Otomoが接続待機中か確認
 
 ### iOSで動作しない場合
 
@@ -161,4 +161,4 @@ Otomo-eデバイスが必要です。詳細は[メインリポジトリ](https:/
 
 ---
 
-**Otomo-e Web Interface - いつでも、どこでも、あなたの写真を美しく。**
+**e-Otomo Web Interface - いつでも、どこでも、あなたの写真を美しく。**
