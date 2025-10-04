@@ -11,7 +11,7 @@
 
 ## ライブデモ
 
-🌐 [art-frame.manomono.net](http://e-otomo.manomono.net/)
+🌐 [e-otomo.manomono.net](http://e-otomo.manomono.net/)
 
 ## 特徴
 
@@ -73,7 +73,7 @@ npx http-server -S -C cert.pem -K key.pem
 ### iOSでの使用
 
 1. App Storeから「Bluefy Web Browser」をダウンロード
-2. Bluefyアプリで[art-frame.manomono.net](http://art-frame.manomono.net/)にアクセス
+2. Bluefyアプリで[e-otomo.manomono.net](http://e-otomo.manomono.net/)にアクセス
 3. 通常のブラウザと同様に操作
 
 ## 機能詳細
