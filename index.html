@@ -440,17 +440,16 @@
 
     <script>
         // WebBluetooth settings - UUIDs for different display types
-        const DEVICE_NAME_SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';  // Original UUID for device name identification
+        const DEVICE_NAME_SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';  // Legacy service for name-based detection
         const DEVICE_NAME_CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
         
-        // Display-specific UUIDs for color capability identification
+        // Display-specific Service UUIDs for automatic color detection
         const DISPLAY_2COLOR_SERVICE_UUID = '11111111-2222-3333-4444-555555555555';
         const DISPLAY_3COLOR_SERVICE_UUID = '22222222-3333-4444-5555-666666666666';
         const DISPLAY_4COLOR_SERVICE_UUID = '33333333-4444-5555-6666-777777777777';
         
-        const DISPLAY_2COLOR_CHARACTERISTIC_UUID = '11111111-aaaa-bbbb-cccc-dddddddddddd';
-        const DISPLAY_3COLOR_CHARACTERISTIC_UUID = '22222222-aaaa-bbbb-cccc-dddddddddddd';
-        const DISPLAY_4COLOR_CHARACTERISTIC_UUID = '33333333-aaaa-bbbb-cccc-dddddddddddd';
+        // Unified Characteristic UUID for all display types (same as legacy)
+        const DISPLAY_CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
         
         // Command types for nRF52840
         const COMMAND_TYPE = {
@@ -772,7 +771,7 @@
 
                 console.log('Searching for e-Otomo devices...');
 
-                // Search for all e-Otomo devices (all display types)
+                // Search for e-Otomo devices by service UUID (automatic color detection)
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [DISPLAY_2COLOR_SERVICE_UUID] },
@@ -829,39 +828,36 @@
 
                     const server = await bluetoothDevice.gatt.connect();
 
-                    // Auto-detect display type by trying to connect to services in priority order
+                    // Auto-detect display type by available services
                     let detectedMode = null;
                     let service = null;
                     let characteristic = null;
 
-                    // Try 4-color first (most features)
+                    // Try to detect by service availability (priority: 4-color > 3-color > 2-color > legacy)
                     try {
-                        console.log('Trying to connect to 4-color service:', DISPLAY_4COLOR_SERVICE_UUID);
                         service = await server.getPrimaryService(DISPLAY_4COLOR_SERVICE_UUID);
-                        characteristic = await service.getCharacteristic(DISPLAY_4COLOR_CHARACTERISTIC_UUID);
+                        characteristic = await service.getCharacteristic(DISPLAY_CHARACTERISTIC_UUID);
                         detectedMode = 4;
-                        console.log('Successfully detected 4-color display, setting displayMode to:', detectedMode);
+                        console.log('Detected 4-color display by service UUID');
                     } catch (e) {
-                        // Try 3-color
                         try {
                             service = await server.getPrimaryService(DISPLAY_3COLOR_SERVICE_UUID);
-                            characteristic = await service.getCharacteristic(DISPLAY_3COLOR_CHARACTERISTIC_UUID);
+                            characteristic = await service.getCharacteristic(DISPLAY_CHARACTERISTIC_UUID);
                             detectedMode = 3;
-                            console.log('Detected 3-color display');
+                            console.log('Detected 3-color display by service UUID');
                         } catch (e) {
-                            // Try 2-color
                             try {
                                 service = await server.getPrimaryService(DISPLAY_2COLOR_SERVICE_UUID);
-                                characteristic = await service.getCharacteristic(DISPLAY_2COLOR_CHARACTERISTIC_UUID);
+                                characteristic = await service.getCharacteristic(DISPLAY_CHARACTERISTIC_UUID);
                                 detectedMode = 2;
-                                console.log('Detected 2-color display');
+                                console.log('Detected 2-color display by service UUID');
                             } catch (e) {
-                                // Try legacy device name service
+                                // Fall back to legacy service with device name detection
                                 try {
                                     service = await server.getPrimaryService(DEVICE_NAME_SERVICE_UUID);
                                     characteristic = await service.getCharacteristic(DEVICE_NAME_CHARACTERISTIC_UUID);
                                     
-                                    // Detect from device name (legacy)
+                                    // Detect from device name for legacy devices
                                     const deviceName = bluetoothDevice.name || '';
                                     if (deviceName.includes('2C')) {
                                         detectedMode = 2;
@@ -870,7 +866,7 @@
                                     } else if (deviceName.includes('4C')) {
                                         detectedMode = 4;
                                     } else {
-                                        detectedMode = 3; // Default
+                                        detectedMode = 3; // Default for legacy devices
                                     }
                                     console.log('Legacy device detected with', detectedMode, 'colors from name:', deviceName);
                                 } catch (e) {
