@@ -778,13 +778,13 @@
                         { services: [DISPLAY_3COLOR_SERVICE_UUID] },
                         { services: [DISPLAY_4COLOR_SERVICE_UUID] },
                         { services: [DEVICE_NAME_SERVICE_UUID] }  // Legacy support
-                    ],
-                    optionalServices: [
-                        DISPLAY_2COLOR_SERVICE_UUID,
-                        DISPLAY_3COLOR_SERVICE_UUID,
-                        DISPLAY_4COLOR_SERVICE_UUID,
-                        DEVICE_NAME_SERVICE_UUID
-                    ]
+                    ]//,
+                    //optionalServices: [
+                    //    DISPLAY_2COLOR_SERVICE_UUID,
+                    //    DISPLAY_3COLOR_SERVICE_UUID,
+                    //    DISPLAY_4COLOR_SERVICE_UUID,
+                    //    DEVICE_NAME_SERVICE_UUID
+                    //]
                 });
 
                 const deviceName = bluetoothDevice.name || '';
