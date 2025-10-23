@@ -372,35 +372,7 @@
             <!-- Browser compatibility info will be inserted here dynamically -->
         </div>
 
-        <div class="display-mode-selector" style="display: none;">
-            <h3>表示モード</h3>
-            <div class="mode-icons">
-                <div class="mode-icon" data-mode="2" onclick="selectDisplayMode(2)">
-                    <div class="mode-preview">
-                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
-                        <span class="color-dot" style="background-color: black;"></span>
-                    </div>
-                    <span class="mode-label">2色</span>
-                </div>
-                <div class="mode-icon" data-mode="3" onclick="selectDisplayMode(3)">
-                    <div class="mode-preview">
-                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
-                        <span class="color-dot" style="background-color: black;"></span>
-                        <span class="color-dot" style="background-color: red;"></span>
-                    </div>
-                    <span class="mode-label">3色</span>
-                </div>
-                <div class="mode-icon active" data-mode="4" onclick="selectDisplayMode(4)">
-                    <div class="mode-preview">
-                        <span class="color-dot" style="background-color: white; border: 1px solid #ccc;"></span>
-                        <span class="color-dot" style="background-color: black;"></span>
-                        <span class="color-dot" style="background-color: red;"></span>
-                        <span class="color-dot" style="background-color: yellow;"></span>
-                    </div>
-                    <span class="mode-label">4色</span>
-                </div>
-            </div>
-        </div>
+        <!-- Display mode selector removed - auto-detected from device UUID -->
         
         <div class="photo-controls">
             <h3>写真を選択</h3>
@@ -467,9 +439,18 @@
     </div>
 
     <script>
-        // WebBluetooth settings - Fixed UUIDs
-        const SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';
-        const CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
+        // WebBluetooth settings - UUIDs for different display types
+        const DEVICE_NAME_SERVICE_UUID = '12345678-1234-5678-9abc-123456789abd';  // Original UUID for device name identification
+        const DEVICE_NAME_CHARACTERISTIC_UUID = '87654321-4321-8765-cba9-987654321abd';
+        
+        // Display-specific UUIDs for color capability identification
+        const DISPLAY_2COLOR_SERVICE_UUID = '11111111-2222-3333-4444-555555555555';
+        const DISPLAY_3COLOR_SERVICE_UUID = '22222222-3333-4444-5555-666666666666';
+        const DISPLAY_4COLOR_SERVICE_UUID = '33333333-4444-5555-6666-777777777777';
+        
+        const DISPLAY_2COLOR_CHARACTERISTIC_UUID = '11111111-aaaa-bbbb-cccc-dddddddddddd';
+        const DISPLAY_3COLOR_CHARACTERISTIC_UUID = '22222222-aaaa-bbbb-cccc-dddddddddddd';
+        const DISPLAY_4COLOR_CHARACTERISTIC_UUID = '33333333-aaaa-bbbb-cccc-dddddddddddd';
         
         // Command types for nRF52840
         const COMMAND_TYPE = {
@@ -488,7 +469,9 @@
         let previewCanvas = null;
         let previewCtx = null;
         let originalImage = null;
-        let displayMode = 4; // 2=2色, 3=3色, 4=4色
+        let displayMode = 4; // 2=2色, 3=3色, 4=4色 (default to 2-color)
+        let currentServiceUUID = null;
+        let currentCharacteristicUUID = null;
         let renderMode = 'floyd-steinberg'; // デフォルトの描画モード
 
         // Image data (200x200 pixels, variable bits per pixel based on mode)
@@ -512,8 +495,8 @@
             // Check WebBluetooth support and show appropriate info
             checkWebBluetoothSupport();
 
-            // Initialize display mode
-            selectDisplayMode(4);
+            // Display mode will be auto-detected when connecting to device
+            displayMode = 4; // Default value, will be overridden
         };
 
         function checkWebBluetoothSupport() {
@@ -640,8 +623,10 @@
                 console.log('Connect button disabled - no WebBluetooth support');
             }
 
-            // Send button remains disabled until connected
-            document.getElementById('sendBtn').disabled = true;
+            // Send button status depends on connection state
+            if (!isConnected) {
+                document.getElementById('sendBtn').disabled = true;
+            }
         }
 
         function resetPhoto() {
@@ -660,29 +645,11 @@
             }
         }
 
-        function selectDisplayMode(mode) {
+        // Display mode is now auto-detected from device UUID
+        // This function is kept for internal use only
+        function setDisplayMode(mode) {
             displayMode = mode;
-            console.log('Display mode changed to:', displayMode);
-
-            // Update UI
-            document.querySelectorAll('.mode-icon').forEach(icon => icon.classList.remove('active'));
-            const targetIcon = document.querySelector(`[data-mode="${mode}"]`);
-            if (targetIcon) {
-                targetIcon.classList.add('active');
-            }
-
-            // Re-apply quantization if preview is available
-            const previewArea = document.getElementById('previewArea');
-            if (previewCtx && originalImage && previewArea && previewArea.style.display !== 'none') {
-                console.log('Re-applying quantization for display mode:', mode);
-                // Re-process the image with new display mode
-                processImageToSquare(originalImage);
-            }
-
-            // Send mode to nRF52840 if connected
-            if (isConnected && bluetoothCharacteristic) {
-                sendModeToDevice();
-            }
+            console.log('Display mode auto-detected as:', displayMode, 'colors');
         }
 
         function selectRenderMode(mode) {
@@ -801,66 +768,56 @@
 
         async function connectToDevice() {
             try {
-                updateStatus('デバイスを検索中...', 'disconnected');
-                
                 updateStatus('e-Otomoデバイスを検索中...', 'disconnected');
 
-                // Filter by service UUID - this will show only e-Otomo devices
+                console.log('Searching for e-Otomo devices...');
+
+                // Search for all e-Otomo devices (all display types)
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     filters: [
-                        { services: [SERVICE_UUID] }
+                        { services: [DISPLAY_2COLOR_SERVICE_UUID] },
+                        { services: [DISPLAY_3COLOR_SERVICE_UUID] },
+                        { services: [DISPLAY_4COLOR_SERVICE_UUID] },
+                        { services: [DEVICE_NAME_SERVICE_UUID] }  // Legacy support
                     ],
-                    optionalServices: [SERVICE_UUID]
+                    optionalServices: [
+                        DISPLAY_2COLOR_SERVICE_UUID,
+                        DISPLAY_3COLOR_SERVICE_UUID,
+                        DISPLAY_4COLOR_SERVICE_UUID,
+                        DEVICE_NAME_SERVICE_UUID
+                    ]
                 });
 
-                // Validate that the selected device is an e-Otomo device
                 const deviceName = bluetoothDevice.name || '';
                 console.log('Selected device:', deviceName);
 
-                // Request larger MTU size for faster data transfer
-                // Note: This is handled automatically by the browser, but we can optimize our approach
-
                 bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-                // Robust connect + service/characteristic discovery with retries
-                await connectGattWithRetry(3);
+                // Connect and auto-detect display type
+                await connectGattWithAutoDetection();
                 
                 isConnected = true;
 
-                // Auto-detect display mode from device name
-                console.log('Connected device name:', deviceName);
-
-                if (deviceName.includes('2C')) {
-                    selectDisplayMode(2);
-                    console.log('Auto-detected 2-color mode from device name');
-                } else if (deviceName.includes('3C')) {
-                    selectDisplayMode(3);
-                    console.log('Auto-detected 3-color mode from device name');
-                } else {
-                    // Default to 3-color for e-Otomo devices
-                    selectDisplayMode(3);
-                    console.log('Default to 3-color mode for e-Otomo device');
-                }
-
-                updateStatus(`デバイスに接続済み (${displayMode}色モード) - 送信可能です`, 'connected');
+                updateStatus(`${displayMode}色デバイスに接続済み - 送信可能です`, 'connected');
                 document.getElementById('connectBtn').textContent = '切断';
                 document.getElementById('connectBtn').onclick = disconnect;
-                // Enable send button (photo should already be selected at this point)
                 document.getElementById('sendBtn').disabled = false;
                 
             } catch (error) {
                 console.error('Connection failed:', error);
                 if (String(error && error.message).includes('GATT Server is disconnected')) {
-                    updateStatus('接続に失敗: デバイスがBLE停止中の可能性があります（Wi‑Fi接続試行後に再広告）。数秒後に再試行してください。', 'disconnected');
+                    updateStatus('接続に失敗: デバイスがBLE停止中の可能性があります。数秒後に再試行してください。', 'disconnected');
+                } else if (String(error && error.message).includes('No Bluetooth device selected')) {
+                    updateStatus('e-Otomoデバイスが見つかりませんでした', 'disconnected');
                 } else {
                     updateStatus('接続に失敗しました: ' + error.message, 'disconnected');
                 }
             }
         }
 
-        async function connectGattWithRetry(attempts) {
+        async function connectGattWithAutoDetection() {
             let lastErr = null;
-            for (let i = 0; i < attempts; i++) {
+            for (let i = 0; i < 3; i++) {
                 try {
                     // Ensure clean state
                     try {
@@ -872,10 +829,75 @@
 
                     const server = await bluetoothDevice.gatt.connect();
 
-                    // Connect to the specific service and characteristic
-                    const service = await server.getPrimaryService(SERVICE_UUID);
-                    bluetoothCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-                    return; // success
+                    // Auto-detect display type by trying to connect to services in priority order
+                    let detectedMode = null;
+                    let service = null;
+                    let characteristic = null;
+
+                    // Try 4-color first (most features)
+                    try {
+                        console.log('Trying to connect to 4-color service:', DISPLAY_4COLOR_SERVICE_UUID);
+                        service = await server.getPrimaryService(DISPLAY_4COLOR_SERVICE_UUID);
+                        characteristic = await service.getCharacteristic(DISPLAY_4COLOR_CHARACTERISTIC_UUID);
+                        detectedMode = 4;
+                        console.log('Successfully detected 4-color display, setting displayMode to:', detectedMode);
+                    } catch (e) {
+                        // Try 3-color
+                        try {
+                            service = await server.getPrimaryService(DISPLAY_3COLOR_SERVICE_UUID);
+                            characteristic = await service.getCharacteristic(DISPLAY_3COLOR_CHARACTERISTIC_UUID);
+                            detectedMode = 3;
+                            console.log('Detected 3-color display');
+                        } catch (e) {
+                            // Try 2-color
+                            try {
+                                service = await server.getPrimaryService(DISPLAY_2COLOR_SERVICE_UUID);
+                                characteristic = await service.getCharacteristic(DISPLAY_2COLOR_CHARACTERISTIC_UUID);
+                                detectedMode = 2;
+                                console.log('Detected 2-color display');
+                            } catch (e) {
+                                // Try legacy device name service
+                                try {
+                                    service = await server.getPrimaryService(DEVICE_NAME_SERVICE_UUID);
+                                    characteristic = await service.getCharacteristic(DEVICE_NAME_CHARACTERISTIC_UUID);
+                                    
+                                    // Detect from device name (legacy)
+                                    const deviceName = bluetoothDevice.name || '';
+                                    if (deviceName.includes('2C')) {
+                                        detectedMode = 2;
+                                    } else if (deviceName.includes('3C')) {
+                                        detectedMode = 3;
+                                    } else if (deviceName.includes('4C')) {
+                                        detectedMode = 4;
+                                    } else {
+                                        detectedMode = 3; // Default
+                                    }
+                                    console.log('Legacy device detected with', detectedMode, 'colors from name:', deviceName);
+                                } catch (e) {
+                                    throw new Error('サポートされていないデバイスです');
+                                }
+                            }
+                        }
+                    }
+
+                    // Set detected mode and update UI
+                    if (detectedMode) {
+                        console.log('Setting displayMode from', displayMode, 'to', detectedMode);
+                        displayMode = detectedMode;
+                        bluetoothCharacteristic = characteristic;
+                        
+                        // Re-apply quantization if preview is available
+                        const previewArea = document.getElementById('previewArea');
+                        if (previewCtx && originalImage && previewArea && previewArea.style.display !== 'none') {
+                            console.log('Re-applying quantization for detected display mode:', displayMode);
+                            processImageToSquare(originalImage);
+                        } else {
+                            console.log('No preview available to update, previewCtx:', !!previewCtx, 'originalImage:', !!originalImage, 'previewArea visible:', previewArea ? previewArea.style.display : 'null');
+                        }
+                        
+                        console.log('Successfully connected with auto-detected', displayMode, 'color mode');
+                        return; // success
+                    }
                 } catch (e) {
                     lastErr = e;
                     console.warn(`GATT connect attempt ${i+1} failed:`, e);
@@ -998,14 +1020,17 @@
                     const g = pixels[rgbaIndex + 1];
                     const b = pixels[rgbaIndex + 2];
 
-                    if (r === 0 && g === 0 && b === 0) {
-                        pixelValues[pixelIndex] = 0x01; // Black
-                    } else if (displayMode >= 3 && r === 255 && g === 0 && b === 0) {
-                        pixelValues[pixelIndex] = 0x02; // Red
-                    } else if (displayMode >= 4 && r === 255 && g === 255 && b === 0) {
-                        pixelValues[pixelIndex] = 0x03; // Yellow
+                    // Color mapping based on display mode
+                    if (r < 128 && g < 128 && b < 128) {
+                        pixelValues[pixelIndex] = 0x01; // Black (dark colors)
+                    } else if (displayMode >= 4 && r > 200 && g > 200 && b < 100) {
+                        pixelValues[pixelIndex] = 0x02; // Yellow (4-color only: high R+G, low B)
+                    } else if (displayMode >= 4 && r > 200 && g < 100 && b < 100) {
+                        pixelValues[pixelIndex] = 0x03; // Red (4-color: high R, low G+B)
+                    } else if (displayMode === 3 && r > 200 && g < 100 && b < 100) {
+                        pixelValues[pixelIndex] = 0x02; // Red (3-color: high R, low G+B)
                     } else {
-                        pixelValues[pixelIndex] = 0x00; // White
+                        pixelValues[pixelIndex] = 0x00; // White (default)
                     }
                 }
             }
@@ -1042,6 +1067,7 @@
         function convertCanvasToImageData() {
             const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
             const pixels = previewImageData.data;
+            console.log(pixels);
 
             imageData.fill(0);
 
@@ -1055,15 +1081,19 @@
                     const b = pixels[rgbaIndex + 2];
                     let pixelValue = 0x00;
 
-                    // Convert RGB to pixel value based on display mode
-                    if (r === 0 && g === 0 && b === 0) {
-                        pixelValue = 0x01; // Black
-                    } else if (displayMode >= 3 && r === 255 && g === 0 && b === 0) {
-                        pixelValue = 0x02; // Red
-                    } else if (displayMode >= 4 && r === 255 && g === 255 && b === 0) {
-                        pixelValue = 0x03; // Yellow
+                    // Convert RGB to pixel value based on display mode with tolerance
+                    // Use closest color matching instead of exact matching
+                    if (r < 128 && g < 128 && b < 128) {
+                        pixelValue = 0x01; // Black (dark colors)
+                    } else if (displayMode >= 4 && r > 200 && g > 200 && b < 100) {
+                        pixelValue = 0x02; // Yellow (4-color only: high R+G, low B)
+                    } else if (displayMode >= 4 && r > 200 && g < 100 && b < 100) {
+                        pixelValue = 0x03; // Red (4-color: high R, low G+B)
+                    } else if (displayMode === 3 && r > 200 && g < 100 && b < 100) {
+                        pixelValue = 0x02; // Red (3-color: high R, low G+B)
+                    } else {
+                        pixelValue = 0x00; // White (default)
                     }
-                    // White pixels remain 0x00
 
                     // Pack pixels based on display mode
                     if (displayMode === 2) {
@@ -1114,13 +1144,15 @@
 
             // Create packet with compressed data header
             // [0] Command Type (0x03 = compressed data)
-            // [1-2] Data length (16-bit)
-            // [3...] Compressed data
-            const packet = new Uint8Array(3 + compressedData.length);
+            // [1] Display mode
+            // [2-3] Data length (16-bit)
+            // [4...] Compressed data
+            const packet = new Uint8Array(4 + compressedData.length);
             packet[0] = 0x03; // Compressed data command
-            packet[1] = compressedData.length & 0xFF; // Length low byte
-            packet[2] = (compressedData.length >> 8) & 0xFF; // Length high byte
-            packet.set(compressedData, 3);
+            packet[1] = displayMode; // Display mode
+            packet[2] = compressedData.length & 0xFF; // Length low byte
+            packet[3] = (compressedData.length >> 8) & 0xFF; // Length high byte
+            packet.set(compressedData, 4);
 
             return packet;
         }
@@ -1316,6 +1348,7 @@
         // Floyd-Steinberg dithering for multi-color e-paper display
         function floydSteinbergDither(imageData, width, height, palette) {
             const data = imageData.data;
+            const colorStats = new Array(palette.length).fill(0); // Track color usage
             
             function findClosestColor(r, g, b) {
                 let minDistance = Infinity;
@@ -1329,6 +1362,7 @@
                         closestColor = i;
                     }
                 }
+                colorStats[closestColor]++; // Track color usage
                 return closestColor;
             }
             
@@ -1403,6 +1437,11 @@
                 }
             }
             
+            // Log color usage statistics
+            console.log('Floyd-Steinberg color usage:', colorStats.map((count, index) => `Color ${index} (${palette[index]}): ${count} pixels`));
+            const totalPixels = colorStats.reduce((sum, count) => sum + count, 0);
+            console.log('Total pixels processed:', totalPixels);
+            
             return imageData;
         }
         
@@ -1410,6 +1449,7 @@
             if (!previewCtx) return;
 
             const previewImageData = previewCtx.getImageData(0, 0, TARGET_SIZE, TARGET_SIZE);
+            console.log('quantizeCanvasToDisplayMode called with displayMode:', displayMode);
 
             // Define palette based on display mode
             let palette;
@@ -1431,7 +1471,10 @@
                     [255, 0, 0],      // Red
                     [255, 255, 0]     // Yellow
                 ];
+                console.log('Using 4-color palette with', palette.length, 'colors');
             }
+            
+            console.log('Selected palette:', palette);
 
             // Apply the selected rendering algorithm
             let processedData;
